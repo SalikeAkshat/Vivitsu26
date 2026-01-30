@@ -4,7 +4,7 @@ import Header from './components/Header';
 import ResumeUpload from './components/ResumeUpload';
 import AnalysisDashboard from './components/AnalysisDashboard';
 import InterviewRoom from './components/InterviewRoom';
-import { ResumeAnalysis, InterviewConfig, InterviewResult } from './types';
+import { ResumeAnalysis, InterviewConfig, InterviewResult, InterviewMode } from './types';
 
 const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
@@ -13,9 +13,15 @@ const App: React.FC = () => {
   const [interviewResult, setInterviewResult] = useState<InterviewResult | null>(null);
   const [showConfig, setShowConfig] = useState(false);
 
+  // Local state for config form
+  const [selectedDomain, setSelectedDomain] = useState<string>('');
+  const [selectedMode, setSelectedMode] = useState<InterviewMode>('Off-Campus');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<InterviewConfig['difficulty']>('Mid-Level');
+  const [questionCount, setQuestionCount] = useState(5);
+
   useEffect(() => {
     if (analysis) {
-      console.log("App State: Analysis data loaded.");
+      setSelectedDomain(analysis.recommendedDomain.title);
     }
   }, [analysis]);
 
@@ -23,7 +29,13 @@ const App: React.FC = () => {
     setShowConfig(true);
   };
 
-  const handleLaunchInterview = (config: InterviewConfig) => {
+  const handleLaunchInterview = () => {
+    const config: InterviewConfig = {
+      domain: selectedDomain || (analysis?.recommendedDomain.title || 'General'),
+      difficulty: selectedDifficulty,
+      questionCount: questionCount,
+      mode: selectedMode
+    };
     setInterviewConfig(config);
     setShowConfig(false);
   };
@@ -48,7 +60,6 @@ const App: React.FC = () => {
       <Header onReset={handleReset} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Step 1: Upload */}
         {!analysis && !isAnalyzing && (
           <div className="text-center mb-12 animate-fade-in">
             <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight">
@@ -64,7 +75,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Step 2: Loading State */}
         {isAnalyzing && (
           <div className="flex flex-col items-center justify-center py-32 space-y-6">
             <div className="relative w-24 h-24">
@@ -75,75 +85,123 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Step 3: Analysis Dashboard */}
         {analysis && !interviewConfig && !interviewResult && !showConfig && (
           <div className="animate-fade-in">
              <AnalysisDashboard data={analysis} onStartInterview={handleStartInterview} />
           </div>
         )}
 
-        {/* Step 4: Interview Config */}
         {showConfig && analysis && (
-          <div className="max-w-xl mx-auto bg-white p-10 rounded-3xl shadow-2xl border border-slate-100 animate-slide-up">
-            <h2 className="text-3xl font-bold text-slate-900 mb-8">Setup Your Mock Interview</h2>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Domain</label>
-                <input 
-                  type="text" 
-                  value={analysis.recommendedDomain.title} 
-                  disabled
-                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-600"
-                />
+          <div className="max-w-3xl mx-auto bg-white p-10 rounded-3xl shadow-2xl border border-slate-100 animate-slide-up">
+            <h2 className="text-3xl font-bold text-slate-900 mb-8">Customize Your Mock Interview</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Select Domain</label>
+                  <select 
+                    value={selectedDomain}
+                    onChange={(e) => setSelectedDomain(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 transition-all"
+                  >
+                    <option value={analysis.recommendedDomain.title}>Primary: {analysis.recommendedDomain.title}</option>
+                    {analysis.recommendedDomain.alternativeDomains.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                    <option value="General Software Engineering">General Software Engineering</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Difficulty Level</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Junior', 'Mid-Level', 'Senior', 'Expert'].map(level => (
+                      <button 
+                        key={level}
+                        onClick={() => setSelectedDifficulty(level as any)}
+                        className={`px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                          selectedDifficulty === level ? 'border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600' : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                        }`}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">Number of Questions: <span className="text-indigo-600">{questionCount}</span></label>
+                  <input 
+                    type="range" 
+                    min="5" 
+                    max="15" 
+                    step="1"
+                    value={questionCount}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-tighter">
+                    <span>Min: 5</span>
+                    <span>Max: 15</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Difficulty Level</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {['Junior', 'Mid-Level', 'Senior', 'Expert'].map(level => (
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Interview Mode</label>
+                  <div className="space-y-3">
                     <button 
-                      key={level}
-                      onClick={() => setInterviewConfig(prev => ({ ...prev!, difficulty: level as any }))}
-                      className={`px-4 py-3 rounded-xl border-2 transition-all ${
-                        interviewConfig?.difficulty === level ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 hover:border-slate-300'
+                      onClick={() => setSelectedMode('Off-Campus')}
+                      className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${
+                        selectedMode === 'Off-Campus' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-200'
                       }`}
                     >
-                      {level}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-4 flex-shrink-0 ${selectedMode === 'Off-Campus' ? 'border-indigo-600 bg-white' : 'border-slate-300'}`} />
+                        <div>
+                          <p className={`font-bold ${selectedMode === 'Off-Campus' ? 'text-indigo-900' : 'text-slate-700'}`}>Off-Campus Mode</p>
+                          <p className="text-xs text-slate-500 mt-1">Focused purely on your selected domain & role.</p>
+                        </div>
+                      </div>
                     </button>
-                  ))}
+
+                    <button 
+                      onClick={() => setSelectedMode('On-Campus')}
+                      className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${
+                        selectedMode === 'On-Campus' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-4 flex-shrink-0 ${selectedMode === 'On-Campus' ? 'border-indigo-600 bg-white' : 'border-slate-300'}`} />
+                        <div>
+                          <p className={`font-bold ${selectedMode === 'On-Campus' ? 'text-indigo-900' : 'text-slate-700'}`}>On-Campus Mode</p>
+                          <p className="text-xs text-slate-500 mt-1">Includes core CS (DSA, OS, DBMS, CN) + Domain.</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    onClick={handleLaunchInterview}
+                    className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl hover:-translate-y-1 active:scale-95"
+                  >
+                    Launch Live Session
+                  </button>
+                  <button 
+                    onClick={() => setShowConfig(false)}
+                    className="w-full py-2 mt-2 text-slate-400 hover:text-slate-600 text-sm font-medium transition-colors"
+                  >
+                    Go Back
+                  </button>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Number of Questions</label>
-                <input 
-                  type="range" 
-                  min="3" 
-                  max="15" 
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  onChange={(e) => setInterviewConfig(prev => ({ ...prev!, questionCount: parseInt(e.target.value) }))}
-                />
-                <div className="flex justify-between text-xs text-slate-500 mt-2 font-bold">
-                  <span>3 Questions</span>
-                  <span>{interviewConfig?.questionCount || 5} Questions</span>
-                  <span>15 Questions</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => handleLaunchInterview(interviewConfig || { domain: analysis.recommendedDomain.title, difficulty: 'Junior', questionCount: 5 })}
-                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg"
-              >
-                Launch Interview
-              </button>
-              <button 
-                onClick={() => setShowConfig(false)}
-                className="w-full py-2 text-slate-400 hover:text-slate-600 text-sm font-medium"
-              >
-                Back to Dashboard
-              </button>
             </div>
           </div>
         )}
 
-        {/* Step 5: Interview Room */}
         {interviewConfig && !interviewResult && (
           <InterviewRoom 
             config={interviewConfig} 
@@ -151,7 +209,6 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* Step 6: Results */}
         {interviewResult && (
           <div className="max-w-4xl mx-auto space-y-8 animate-slide-up">
             <div className="bg-white p-12 rounded-3xl shadow-xl border border-slate-100 text-center">

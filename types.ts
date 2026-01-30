@@ -15,19 +15,28 @@ export interface ResumeAnalysis {
     title: string;
     justification: string;
     potentialRoles: string[];
+    alternativeDomains: string[];
+  };
+  jdMatch?: {
+    matchPercentage: number;
+    missingKeywords: string[];
+    suitabilityFeedback: string;
   };
 }
 
 export interface InterviewQuestion {
   id: number;
   text: string;
-  type: 'technical' | 'behavioral';
+  type: 'technical' | 'behavioral' | 'core-cs';
 }
+
+export type InterviewMode = 'On-Campus' | 'Off-Campus';
 
 export interface InterviewConfig {
   domain: string;
   difficulty: 'Junior' | 'Mid-Level' | 'Senior' | 'Expert';
   questionCount: number;
+  mode: InterviewMode;
 }
 
 export interface InterviewResult {
